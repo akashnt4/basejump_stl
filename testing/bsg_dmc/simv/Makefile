@@ -8,12 +8,6 @@ include $(BSG_CADENV_DIR)/cadenv.mk
 
 export VCS_HOME = $(VCS_RELEASE)
 
-#TODO akashs3 commented: Why is this needed?
-#ANALYSIS_OPTIONS = -full64
-#ANALYSIS_OPTIONS += -sverilog
-#ANALYSIS_OPTIONS += +incdir+../../bsg_clk_gen
-#ANALYSIS_OPTIONS += +incdir+../../bsg_misc
-
 ELABORATE_OPTIONS = -full64
 ELABORATE_OPTIONS += -sverilog
 ELABORATE_OPTIONS += -debug_pp
@@ -26,21 +20,15 @@ ELABORATE_OPTIONS += -assert svaext
 ELABORATE_OPTIONS += +define+den2048Mb+sg5+x16+FULL_MEM
 RUN_OPTIONS = 
 
-#TODO akashs3 commented: Why is this needed?
-#analyze:
-#	$(VCS_BIN)/vlogan $(ANALYSIS_OPTIONS) -timescale=1ns/1ps +incdir+lpddr_verilog_model+../../bsg_dmc +define+den2048Mb+sg5+x16+FULL_MEM -f filelist.lst -l  $@.log
-#	touch $@
-#ech: 
-#	echo $(VCS_RELEASE)
 elaborate: 
 	$(VCS_BIN)/vcs $(ELABORATE_OPTIONS) -f filelist.lst -l $@.log $(BASEJUMP_STL_DIR)/testing/bsg_dmc/tb_top/testbench.sv
 	touch $@
 
-run: elaborate
+run:
 	./simv $(RUN_OPTIONS) -l $@.log
 	touch $@
 
-dve: run
+dve:
 	$(VCS_BIN)/dve -full64 -vpd vcdplus.vpd &
 
 clean:
