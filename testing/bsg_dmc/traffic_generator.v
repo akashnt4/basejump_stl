@@ -43,7 +43,10 @@ module traffic_generator
   ,localparam payload_width_lp 	 = ui_data_width_p + ui_mask_width_lp + 4
   )
   // Tag lines
-  (output  bsg_tag_lines_s			  tag_lines_o
+  (
+   output bsg_dmc_osc_tag_lines_s     osc_tag_lines_o
+  ,output bsg_dmc_delay_tag_lines_s   delay_tag_lines_o
+  ,output bsg_dmc_cfg_tag_lines_s     cfg_tag_lines_o
   //
   // Global asynchronous reset input, will be synchronized to each clock domain
   // Consistent with the reset signal defined in Xilinx UI interface
@@ -269,6 +272,10 @@ module traffic_generator
 	);
 
   // BSG tag master instance
+  bsg_tag_s [28:0] tag_lines_lo;
+  bsg_tag_s [9:0] delay_tag_lines_lo;
+  bsg_tag_s [13:0] cfg_tag_lines_lo;
+  bsg_tag_s [4:0] osc_tag_lines_lo;
   bsg_tag_master #(.els_p( 29 )
                   ,.lg_width_p( tag_lg_max_payload_width_gp )
                   )
@@ -276,8 +283,12 @@ module traffic_generator
       (.clk_i      ( tag_clk )
       ,.data_i     ( tag_master_data_li )
       ,.en_i       ( 1'b1 )
-      ,.clients_r_o( tag_lines_o )
+      ,.clients_r_o( tag_lines_lo )
       );
+
+  assign delay_tag_lines_lo = tag_lines_lo[0+:10];
+  assign cfg_tag_lines_lo = tag_lines_lo[10+:14];
+  assign osc_tag_lines_lo = tag_lines_lo[24+:5];
 
   logic     [ui_addr_width_p-1:0]  app_addr;
   app_cmd_e                        app_cmd;

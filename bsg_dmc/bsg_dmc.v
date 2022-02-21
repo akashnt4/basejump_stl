@@ -17,7 +17,9 @@ module bsg_dmc
   // Tag lines
   (
   output logic						 refresh_in_progress_o
-  ,input bsg_tag_lines_s 			 tag_lines_i
+  ,input bsg_dmc_osc_tag_lines_s     osc_tag_lines_i
+  ,input bsg_dmc_delay_tag_lines_s   delay_tag_lines_i
+  ,input bsg_dmc_cfg_tag_lines_s     cfg_tag_lines_i
   , output							 clock_monitor_clk_o
   // Global asynchronous reset input, will be synchronized to each clock domain
   // Consistent with the reset signal defined in Xilinx UI interface
@@ -113,23 +115,17 @@ module bsg_dmc
   bsg_dmc_s 						 dmc_p_lo;
   assign device_temp_o = 12'd0;
 
-  bsg_dmc_tag_lines_s dmc_tag_lines_s_lo;
-  bsg_osc_tag_lines_s osc_tag_lines_lo;
-
   logic stall_transmission_lo;
 
   assign dfi_clk_2x_o = dfi_clk_2x_lo;
   assign dfi_clk_1x_o = dfi_clk_1x_lo;
 
   bsg_dmc_tag_clients
-					#(.dq_group_p(dq_group_lp)
-					)
+					#(.dq_group_p(dq_group_lp))
 					dmc_tag_clients
-					(.tag_lines_i(tag_lines_i)
+					(.tag_lines_i(cfg_tag_lines_i)
 					,.dfi_clk_1x_i(dfi_clk_1x_lo)
 					,.ui_clk_sync_rst_i(ui_clk_sync_rst_o)
-					,.dmc_tag_lines_s_o(dmc_tag_lines_s_lo)
-                    ,.osc_tag_lines_o(osc_tag_lines_lo)
 					,.dmc_p_o(dmc_p_lo)
 					,.sys_reset_o(sys_reset_lo)
 					,.stall_transmission_o(stall_transmission_lo)
@@ -141,16 +137,16 @@ module bsg_dmc
   dmc_clk_rst_gen
     // tag lines
     (
-	.bsg_dmc_tag_lines_s_i  (dmc_tag_lines_s_lo)
-    ,.osc_tag_lines_i       (osc_tag_lines_lo)
+	.delay_tag_lines_i      (delay_tag_lines_i)
+    ,.osc_tag_lines_i       (osc_tag_lines_i)
     ,.async_reset_o         ( sys_reset             )
 
-    ,.clk_i                 ( ddr_dqs_p_i           )
-    ,.clk_o                 ( dqs_p_li              )
+    ,.dqs_clk_i             ( ddr_dqs_p_i           )
+    ,.dqs_clk_o             ( dqs_p_li              )
 
     ,.ext_dfi_clk_2x_i      ( ext_dfi_clk_2x_i      )
     ,.dfi_clk_2x_o          ( dfi_clk_2x_lo         )
-    ,.clk_1x_o              ( dfi_clk_1x_lo         )
+    ,.dfi_clk_1x_o          ( dfi_clk_1x_lo         )
 	,.clock_monitor_clk_o	(clock_monitor_clk_o));
 
   bsg_sync_sync #(.width_p(1)) ui_reset_inst

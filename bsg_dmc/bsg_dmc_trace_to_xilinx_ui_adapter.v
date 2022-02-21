@@ -44,8 +44,6 @@ module bsg_dmc_trace_to_xilinx_ui_adapter
    		input                              		app_rd_data_end_i
 	);
 
-	import bsg_dmc_pkg::*;
-
 	`declare_dmc_trace_entry_s(addr_width_p, burst_width_p, data_width_p)
 
 	// counter to load one packet per burst per cycle onto app_wdata and app_wmask

@@ -54,17 +54,18 @@ package bsg_dmc_pkg;
     bsg_tag_s [3:0]   bsg_dly_tag;
     bsg_tag_s [3:0]   bsg_dly_trigger_tag;
     bsg_tag_s         bsg_ds_tag;
-  } bsg_dmc_tag_lines_s;
+  } bsg_dmc_delay_tag_lines_s;
 
   typedef struct packed {
-    bsg_tag_s [28:0] tag_lines;
-  } bsg_tag_lines_s;
+    bsg_tag_s [13:0] tag_lines;
+  } bsg_dmc_cfg_tag_lines_s;
 
   typedef struct packed {
-    bsg_tag_s async_reset_tag_lines;
-    bsg_tag_s osc_tag_lines;
-    bsg_tag_s osc_trigger_tag_lines;
-    bsg_tag_s ds_tag_lines;
+    bsg_tag_s async_reset;
+    bsg_tag_s osc;
+    bsg_tag_s osc_trigger;
+    bsg_tag_s ds;
     bsg_tag_s bsg_clk_monitor_ds_tag;
-  } bsg_osc_tag_lines_s;
+  } bsg_dmc_osc_tag_lines_s;
+
 endpackage // bsg_dmc_pkg
