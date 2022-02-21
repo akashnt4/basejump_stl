@@ -8,7 +8,7 @@ module bsg_dmc_clk_rst_gen
  #(parameter num_adgs_p         = 2
   ,parameter `BSG_INV_PARAM(dq_group_p        ))
   (
-  input bsg_dmc_delay_tag_lines_s    delay_tag_lines_i
+  input bsg_dmc_dly_tag_lines_s    dly_tag_lines_i
   ,input bsg_dmc_osc_tag_lines_s     osc_tag_lines_i    
   // asynchronous reset for dram controller
   ,output                            async_reset_o
@@ -27,14 +27,14 @@ module bsg_dmc_clk_rst_gen
   genvar i;
 
   bsg_tag_client_unsync #(.width_p(1)) btc_async_reset
-    (.bsg_tag_i      ( delay_tag_lines_i.async_reset_tag )
+    (.bsg_tag_i      ( dly_tag_lines_i.async_reset_tag )
     ,.data_async_r_o ( async_reset_o     ));
 
   // Clock Generator (CG) Instance
   for(i=0;i<dq_group_p;i++) begin: dly_lines
     bsg_dly_line #(.num_adgs_p(num_adgs_p)) dly_line_inst
-      (.bsg_tag_i         ( delay_tag_lines_i.bsg_dly_tag[i]         )
-      ,.bsg_tag_trigger_i ( delay_tag_lines_i.bsg_dly_trigger_tag[i] )
+      (.bsg_tag_i         ( dly_tag_lines_i.bsg_dly_tag[i]         )
+      ,.bsg_tag_trigger_i ( dly_tag_lines_i.bsg_dly_trigger_tag[i] )
       ,.async_reset_i     ( async_reset_o            )
       ,.clk_i             ( dqs_clk_i[i]             )
       ,.clk_o             ( dqs_clk_o[i]             ));
@@ -54,7 +54,7 @@ module bsg_dmc_clk_rst_gen
     (.width_p   ( $bits(bsg_clk_gen_ds_tag_payload_s) )
     ,.harden_p  ( 1                                   ))
   btc_ds
-    (.bsg_tag_i     ( delay_tag_lines_i.bsg_ds_tag         )
+    (.bsg_tag_i     ( dly_tag_lines_i.bsg_ds_tag         )
 
     ,.recv_clk_i    ( dfi_clk_2x_o             )
     ,.recv_new_r_o  ( ds_tag_payload_new_r )   // we don't require notification

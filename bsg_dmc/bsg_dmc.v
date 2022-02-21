@@ -18,7 +18,7 @@ module bsg_dmc
   (
   output logic						 refresh_in_progress_o
   ,input bsg_dmc_osc_tag_lines_s     osc_tag_lines_i
-  ,input bsg_dmc_delay_tag_lines_s   delay_tag_lines_i
+  ,input bsg_dmc_dly_tag_lines_s   dly_tag_lines_i
   ,input bsg_dmc_cfg_tag_lines_s     cfg_tag_lines_i
   , output							 clock_monitor_clk_o
   // Global asynchronous reset input, will be synchronized to each clock domain
@@ -135,7 +135,7 @@ module bsg_dmc
   dmc_clk_rst_gen
     // tag lines
     (
-	.delay_tag_lines_i      (delay_tag_lines_i)
+	.dly_tag_lines_i      (dly_tag_lines_i)
     ,.osc_tag_lines_i       (osc_tag_lines_i)
     ,.async_reset_o         ( sys_reset             )
 

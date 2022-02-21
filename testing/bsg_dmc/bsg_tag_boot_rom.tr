@@ -184,7 +184,7 @@
 0001___1___11011_1_0111___00000001
 0001___1___11011_1_0111___00000000
 
-### Set delay line triggers low
+### Set dly line triggers low
 
 #SEND  en   id=5  d l=1    {trigger}
 0001___1___00101_1_0001___00000000
@@ -195,7 +195,7 @@
 #SEND  en   id=8  d l=1    {trigger}
 0001___1___01000_1_0001___00000000
 
-### Program the delay lines
+### Program the dly lines
 
 #SEND  en   id=1  d l=5    {adt, cdt, fdt}
 0001___1___00001_1_0101___00011111
@@ -206,7 +206,7 @@
 #SEND  en   id=4  d l=5    {adt, cdt, fdt}
 0001___1___00100_1_0101___00011111
 
-### Trigger delay lines
+### Trigger dly lines
 
 #SEND  en   id=5  d l=1    {trigger}
 0001___1___00101_1_0001___00000001
@@ -221,7 +221,7 @@
 0001___1___01000_1_0001___00000001
 0001___1___01000_1_0001___00000000
 
-### Async delay line reset to get things moving
+### Async dly line reset to get things moving
 
 #SEND  en   id=0  d l=1    {async_reset}
 0001___1___00000_1_0001___00000000

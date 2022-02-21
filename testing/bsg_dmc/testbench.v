@@ -96,7 +96,7 @@ module testbench();
 
   // All tag lines from the btm
   bsg_dmc_cfg_tag_lines_s cfg_tag_lines_lo;
-  bsg_dmc_delay_tag_lines_s delay_tag_lines_lo;
+  bsg_dmc_dly_tag_lines_s dly_tag_lines_lo;
   bsg_dmc_osc_tag_lines_s osc_tag_lines_lo;
 
   logic send_dynamic_tag, irritate_clock, clock_correction_done_lo;
@@ -139,7 +139,7 @@ module testbench();
     ,.ui_clk_sync_rst_i     ( ui_clk_sync_rst     )
     ,.dfi_clk_2x_o          ( dfi_clk_2x          )
 	,.cfg_tag_lines_o       (cfg_tag_lines_lo)
-	,.delay_tag_lines_o     (delay_tag_lines_lo)
+	,.dly_tag_lines_o     (dly_tag_lines_lo)
 	,.osc_tag_lines_o       (osc_tag_lines_lo)
 	,.stall_trace_reading_i (send_dynamic_tag)
 	,.irritate_clock_i		(irritate_clock)
@@ -162,7 +162,7 @@ module testbench();
 
 	.refresh_in_progress_o (refresh_in_progress_lo)
 	,.cfg_tag_lines_i       ( cfg_tag_lines_lo    )
-	,.delay_tag_lines_i     ( delay_tag_lines_lo  )
+	,.dly_tag_lines_i     ( dly_tag_lines_lo  )
 	,.osc_tag_lines_i       ( osc_tag_lines_lo    )
     ,.app_addr_i            ( app_addr            )
     ,.app_cmd_i             ( app_cmd             )

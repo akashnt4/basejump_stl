@@ -277,7 +277,7 @@ module mobile_ddr (Dq, Dqs, Addr, Ba, Clk, Clk_n, Cke, Cs_n, Ras_n, Cas_n, We_n,
     // Burst counter
     reg        [COL_BITS - 1 : 0] Burst_counter;
 
-    // Burst counter delay
+    // Burst counter dly
     reg [COL_BITS - 1 : 0] Burst_counter_dly;
     always @(Mode_reg or Burst_counter) begin
        if (Mode_reg[6:4] == 3'b010) begin
@@ -300,7 +300,7 @@ module mobile_ddr (Dq, Dqs, Addr, Ba, Clk, Clk_n, Cke, Cs_n, Ras_n, Cas_n, We_n,
     wire                          Data_out_enable = Read_pipeline[0];
     wire                          tWTR_en = ((|Write_pipeline[`MAX_PIPE : 0]) & ~(&Dm));
 
-    // Data Out Enable delay
+    // Data Out Enable dly
 //    reg Data_out_enable_dly;
 //    always @(Mode_reg or Data_out_enable) begin
 //       if (Mode_reg[6:4] == 3'b010) begin
@@ -369,9 +369,9 @@ module mobile_ddr (Dq, Dqs, Addr, Ba, Clk, Clk_n, Cke, Cs_n, Ras_n, Cas_n, We_n,
     end
 
     // DQS Buffer
-    reg [DQS_BITS - 1 : 0] dqs_delayed ;
+    reg [DQS_BITS - 1 : 0] dqs_dlyed ;
 //    always@* begin
-//       dqs_delayed <= Dqs_out ;
+//       dqs_dlyed <= Dqs_out ;
 //    end
 
     assign    Dqs = (Dqs_out_en) ? {DQS_BITS{Dqs_out}} : 'bz;
@@ -413,7 +413,7 @@ module mobile_ddr (Dq, Dqs, Addr, Ba, Clk, Clk_n, Cke, Cs_n, Ras_n, Cas_n, We_n,
 //        Dqs_gen = {DQS_BITS{1'bz}};
         Dq_out = {DQ_BITS{1'bz}};
         Dq_out_en = {DQ_BITS{1'b0}};
-//        dq_delayed = {DQ_BITS{1'bz}};
+//        dq_dlyed = {DQ_BITS{1'bz}};
 //        Data_in_enable = 1'b0;
 //        Data_out_enable = 1'b0;
         aref_count = 0;
@@ -1234,7 +1234,7 @@ end
                 if (PD_cntr < tCKE) begin
                     $display ("%m: At time %t ERROR: tCKE violation during exiting of Deep Power-Down Mode", $realtime);
                 end
-                $display ("%m: at time %t Exiting Deep Power-Down Mode - A 200 us delay is required with either DESELECT or NOP commands present before the initialization sequence may begin", $realtime);
+                $display ("%m: at time %t Exiting Deep Power-Down Mode - A 200 us dly is required with either DESELECT or NOP commands present before the initialization sequence may begin", $realtime);
                 enter_DPD = 1'b0;
             end
         end

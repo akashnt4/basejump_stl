@@ -108,18 +108,18 @@ if __name__ == "__main__":
 
   for i in range(10):
     addr = (random.randint(0, 2**22) << 6)
-    delay = random.randint(0,10)
+    dly = random.randint(0,10)
 
 
     #mask_val = 0
     mask_val = random.randint(0, 2^(tg.mask_width_lp))
 
-    if delay == 0:
+    if dly == 0:
       pass
-    elif delay == 1:
+    elif dly == 1:
       tg.nop()
     else:
-      tg.wait(delay)
+      tg.wait(dly)
 
     if addr in mem_dict:
       write_not_read = random.randint(0,1)
@@ -140,14 +140,14 @@ if __name__ == "__main__":
 
   # read back everything
   for tu in mem_dict.items():
-    delay = random.randint(0,32)
+    dly = random.randint(0,32)
 
-    if delay == 0:
+    if dly == 0:
       pass
-    elif delay == 1:
+    elif dly == 1:
       tg.nop()
     else:
-      tg.wait(delay)
+      tg.wait(dly)
 
     tg.send_read(tu[0])
     #tg.recv_data(tu[1])  

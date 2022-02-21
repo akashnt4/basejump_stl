@@ -56,8 +56,8 @@ package bsg_dmc_pkg;
     bsg_tag_s [3:0]   bsg_dly_tag;
     bsg_tag_s [3:0]   bsg_dly_trigger_tag;
     bsg_tag_s         bsg_ds_tag;
-  } bsg_dmc_delay_tag_lines_s;
-  localparam tag_dmc_delay_local_els_gp = $bits(bsg_dmc_delay_tag_lines_s)/$bits(bsg_tag_s);
+  } bsg_dmc_dly_tag_lines_s;
+  localparam tag_dmc_dly_local_els_gp = $bits(bsg_dmc_dly_tag_lines_s)/$bits(bsg_tag_s);
 
   typedef struct packed {
     bsg_tag_s stall_transmission;
