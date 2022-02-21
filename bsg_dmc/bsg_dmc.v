@@ -131,7 +131,7 @@ module bsg_dmc
 					 
   bsg_dmc_clk_rst_gen #
     (.num_adgs_p  ( num_adgs_p  )
-    ,.num_lines_p ( dq_group_lp ))
+    ,.dq_group_p  ( dq_group_lp ))
   dmc_clk_rst_gen
     // tag lines
     (
@@ -145,7 +145,7 @@ module bsg_dmc
     ,.ext_dfi_clk_2x_i      ( ext_dfi_clk_2x_i      )
     ,.dfi_clk_2x_o          ( dfi_clk_2x_lo         )
     ,.dfi_clk_1x_o          ( dfi_clk_1x_lo         )
-	,.clock_monitor_clk_o	(clock_monitor_clk_o));
+    );
 
   bsg_sync_sync #(.width_p(1)) ui_reset_inst
     (.oclk_i      ( ui_clk_i    )

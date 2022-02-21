@@ -52,10 +52,10 @@ package bsg_dmc_pkg;
   localparam bsg_dmc_tag_client_width_gp = 8;
 
   typedef struct packed {
-    bsg_tag_s         async_reset_tag;
-    bsg_tag_s [3:0]   bsg_dly_tag;
-    bsg_tag_s [3:0]   bsg_dly_trigger_tag;
-    bsg_tag_s         bsg_ds_tag;
+    bsg_tag_s         async_reset;
+    bsg_tag_s [3:0]   dly;
+    bsg_tag_s [3:0]   dly_trigger;
+    bsg_tag_s         ds;
   } bsg_dmc_dly_tag_lines_s;
   localparam tag_dmc_dly_local_els_gp = $bits(bsg_dmc_dly_tag_lines_s)/$bits(bsg_tag_s);
 
@@ -82,7 +82,6 @@ package bsg_dmc_pkg;
     bsg_tag_s osc;
     bsg_tag_s osc_trigger;
     bsg_tag_s ds;
-    bsg_tag_s bsg_clk_monitor_ds_tag;
   } bsg_dmc_osc_tag_lines_s;
   localparam tag_dmc_osc_local_els_gp = $bits(bsg_dmc_osc_tag_lines_s)/$bits(bsg_tag_s);
 
