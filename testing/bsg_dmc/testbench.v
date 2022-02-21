@@ -94,6 +94,8 @@ module testbench();
   wire  [(dq_data_width_p>>3)-1:0] ddr_dqs_n;
   wire       [dq_data_width_p-1:0] ddr_dq;
 
+  wire                              dfi_clk_2x_lo;
+
   // All tag lines from the btm
   bsg_dmc_cfg_tag_lines_s cfg_tag_lines_lo;
   bsg_dmc_dly_tag_lines_s dly_tag_lines_lo;
@@ -215,10 +217,18 @@ module testbench();
     ,.ui_clk_sync_rst_o     ( ui_clk_sync_rst     )
 
     ,.ext_dfi_clk_2x_i      ( dfi_clk_2x          )
-    ,.dfi_clk_2x_o          (                     )
+    ,.dfi_clk_2x_o          ( dfi_clk_2x_lo       )
     ,.dfi_clk_1x_o          (                     )
-    ,.device_temp_o         ( device_temp         )
-	,.clock_monitor_clk_o	(clock_monitor_clk_lo));
+    ,.device_temp_o         ( device_temp         ));
+
+  bsg_counter_clock_downsample #
+    (.width_p  ( 2 )
+    ,.harden_p ( 1 ))
+  clk_monitor_clk_gen
+    (.clk_i   ( dfi_clk_2x_lo )
+    ,.reset_i ( ui_clk_sync_rst )
+    ,.val_i   ( 2'b1)
+    ,.clk_r_o (clock_monitor_clk_lo));
 
   generate
     for(i=0;i<dq_group_lp;i++) begin: dm_io

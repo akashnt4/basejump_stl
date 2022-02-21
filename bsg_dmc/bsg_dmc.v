@@ -16,11 +16,9 @@ module bsg_dmc
   ,localparam dq_group_lp        = dq_data_width_p >> 3)
   // Tag lines
   (
-  output logic						 refresh_in_progress_o
-  ,input bsg_dmc_osc_tag_lines_s     osc_tag_lines_i
-  ,input bsg_dmc_dly_tag_lines_s   dly_tag_lines_i
+   input bsg_dmc_osc_tag_lines_s     osc_tag_lines_i
+  ,input bsg_dmc_dly_tag_lines_s     dly_tag_lines_i
   ,input bsg_dmc_cfg_tag_lines_s     cfg_tag_lines_i
-  , output							 clock_monitor_clk_o
   // Global asynchronous reset input, will be synchronized to each clock domain
   // Consistent with the reset signal defined in Xilinx UI interface
   // User interface signals
@@ -44,6 +42,7 @@ module bsg_dmc
   ,input                             app_sr_req_i
   ,output                            app_sr_active_o
   // Status signal
+  ,output logic						 refresh_in_progress_o
   ,output                            init_calib_complete_o
   // DDR interface signals
   // Physically compatible with (LP)DDR3/DDR2/DDR, but only (LP)DDR

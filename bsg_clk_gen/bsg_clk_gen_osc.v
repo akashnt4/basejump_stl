@@ -1,6 +1,8 @@
 `include "bsg_defines.v"
 
+`ifndef BSG_NO_TIMESCALE
 `timescale 1ps/1ps
+`endif
 
 // This module is a behavioral model of the clock generator ring
 // oscillator. A TSMC 250nm hardened implementation of this module
@@ -11,14 +13,20 @@
 // This module should be replaced by the hardened version
 // when being synthesized.
 
+`ifndef BSG_NONSYNTH_CLK_GEN_OSC_GRANULARITY
+`define BSG_NONSYNTH_CLK_GEN_OSC_GRANULARITY 100
+`endif
+
+`ifndef BSG_NONSYNTH_CLK_GEN_OSC_BASE_DELAY
+`define BSG_NONSYNTH_CLK_GEN_OSC_BASE_DELAY 1000
+`endif
+
 `include "bsg_clk_gen.vh"
 
 module bsg_clk_gen_osc
   import bsg_tag_pkg::bsg_tag_s;
 
-    #(parameter num_adgs_p=1
-	 ,parameter osc_granularity_p = 100
-	 ,parameter osc_base_delay_p = 1000)
+    #(parameter num_adgs_p=1)
   (
    input async_reset_i
    ,input bsg_tag_s bsg_tag_i
@@ -27,6 +35,9 @@ module bsg_clk_gen_osc
    );
 
    `declare_bsg_clk_gen_osc_tag_payload_s(num_adgs_p)
+
+   localparam osc_granularity_lp = `BSG_NONSYNTH_CLK_GEN_OSC_GRANULARITY;
+   localparam osc_base_delay_lp = `BSG_NONSYNTH_CLK_GEN_OSC_BASE_DELAY;
 
    bsg_clk_gen_osc_tag_payload_s fb_tag_r;
    bsg_tag_client_unsync
@@ -60,10 +71,10 @@ module bsg_clk_gen_osc
 
    always
      begin
-         #(osc_base_delay_p*1ps);
+         #(osc_base_delay_lp);
         if (ctrl_rrr !== 'X)
           # (
-             ((1 << $bits(ctrl_rrr)) - ctrl_rrr)*osc_granularity_p
+             ((1 << $bits(ctrl_rrr)) - ctrl_rrr)*osc_granularity_lp
             )
         clk_o <= ~(clk_o | async_reset_i);
 

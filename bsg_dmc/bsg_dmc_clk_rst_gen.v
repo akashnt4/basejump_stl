@@ -103,7 +103,6 @@ module bsg_dmc_clk_rst_gen
   bsg_clk_gen #(.downsample_width_p(2)
                ,.num_adgs_p(num_adgs_p)
                ,.version_p(2)
-  			   ,.nonsynth_sim_osc_granularity_p(50)
                )
   clk_gen_inst
       (.async_osc_reset_i     (async_reset_lo)

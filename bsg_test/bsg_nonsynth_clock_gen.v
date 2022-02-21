@@ -1,8 +1,11 @@
 // we use bit for the output so that it starts at 0
 // this helps with x prop mode in VCS
-`include "bsg_defines.v"
 
+`ifndef BSG_NO_TIMESCALE
 `timescale 1ps/1ps
+`endif
+
+`include "bsg_defines.v"
 
 module bsg_nonsynth_clock_gen
   #(parameter `BSG_INV_PARAM(cycle_time_p))
