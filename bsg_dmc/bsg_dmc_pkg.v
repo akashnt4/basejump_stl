@@ -75,7 +75,9 @@ package bsg_dmc_pkg;
   } bsg_dmc_cfg_tag_lines_s;
   localparam tag_dmc_cfg_local_els_gp = $bits(bsg_dmc_cfg_tag_lines_s)/$bits(bsg_tag_s);
 
+  // TODO: Align with clk gen lines
   typedef struct packed {
+    bsg_tag_s sel;
     bsg_tag_s async_reset;
     bsg_tag_s osc;
     bsg_tag_s osc_trigger;

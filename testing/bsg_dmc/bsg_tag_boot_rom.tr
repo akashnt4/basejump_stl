@@ -25,11 +25,12 @@
 #	 25  | Clkgen Oscillator      			 | 5-bits
 #    26  | Clkgen Osc Trigger     			 | 1-bit
 #    27  | Clkgen Downsampler    			 | 7-bits
-#    28  | clock monitor downsampler         | 2 bits
+#    28  | Clkgen Monitor Downsampler        | 2 bits
+#    29  | Clkgen sel                        | 2 bits
 #
 #
 # Number of masters = 1
-# Number of clients = 23
+# Number of clients = 29
 # Max data width = 8
 #
 # Packet lengths
@@ -141,8 +142,10 @@
 0001___1___11010_0_0001___00000001
 #SEND  en   id=27  r l=7
 0001___1___11011_0_0111___01111111
-#SEND  en   id=28  r l=3
-0001___1___11100_0_0111___00000111
+#SEND  en   id=28  r l=2
+0001___1___11100_0_0111___00000011
+#SEND  en   id=29  r l=2
+0001___1___11101_0_0111___00000011
 ################################################################################
 #
 # START CONFIGURATION
@@ -152,6 +155,8 @@
 #	 25  | Clkgen Oscillator      			 | 5-bits
 #    26  | Clkgen Osc Trigger     			 | 1-bit
 #    27  | Clkgen Downsampler    			 | 7-bits
+#    28  | Clkgen Sel            			 | 7-bits
+
 ### Async clk-gen reset to get things moving
 
 #SEND  en   id=24   d l=1    {async_reset}

@@ -6,7 +6,7 @@ module bsg_dmc_clk_rst_gen
   import bsg_tag_pkg::bsg_tag_s;
   import bsg_dmc_pkg::*;
  #(parameter num_adgs_p         = 2
-  ,parameter `BSG_INV_PARAM(num_lines_p        ))
+  ,parameter `BSG_INV_PARAM(dq_group_p        ))
   (
   input bsg_dmc_delay_tag_lines_s    delay_tag_lines_i
   ,input bsg_dmc_osc_tag_lines_s     osc_tag_lines_i    
@@ -14,8 +14,8 @@ module bsg_dmc_clk_rst_gen
   ,output                            async_reset_o
   // clock input and delayed clock output (for dqs), generating 90-degree phase
   // shift
-  ,input           [num_lines_p-1:0] dqs_clk_i
-  ,output          [num_lines_p-1:0] dqs_clk_o
+  ,input            [dq_group_p-1:0] dqs_clk_i
+  ,output           [dq_group_p-1:0] dqs_clk_o
   // 2x clock input from clock generator and 1x clock output
   ,input                             ext_dfi_clk_2x_i
   ,output                            dfi_clk_2x_o
@@ -31,7 +31,7 @@ module bsg_dmc_clk_rst_gen
     ,.data_async_r_o ( async_reset_o     ));
 
   // Clock Generator (CG) Instance
-  for(i=0;i<num_lines_p;i++) begin: dly_lines
+  for(i=0;i<dq_group_p;i++) begin: dly_lines
     bsg_dly_line #(.num_adgs_p(num_adgs_p)) dly_line_inst
       (.bsg_tag_i         ( delay_tag_lines_i.bsg_dly_tag[i]         )
       ,.bsg_tag_trigger_i ( delay_tag_lines_i.bsg_dly_trigger_tag[i] )
@@ -70,11 +70,14 @@ module bsg_dmc_clk_rst_gen
     ,.recv_new_r_o  (  )   // we don't require notification
     ,.recv_data_r_o ( clk_monitor_ds_tag_payload_r     ));
 
+
+  // synopsys translate_off
   if (debug_level_lp > 1)
   always_ff @(negedge dfi_clk_2x_o) begin
     if (ds_tag_payload_new_r)
       $display("## bsg_clk_gen downsampler received configuration state: %b",ds_tag_payload_r);
   end
+  // synopsys translate_on
 
   // clock downsampler
   //
@@ -87,7 +90,7 @@ module bsg_dmc_clk_rst_gen
   clk_gen_ds_inst
     (.clk_i   ( dfi_clk_2x_o           )
     ,.reset_i ( ds_tag_payload_r.reset )
-    ,.val_i   ( 2'd0                   )
+    ,.val_i   ( 2'd0                   ) // Always 2X->1X
     ,.clk_r_o ( dfi_clk_1x_o           ));
 
   bsg_counter_clock_downsample #
@@ -119,7 +122,7 @@ module bsg_dmc_clk_rst_gen
       ,.bsg_osc_trigger_tag_i (osc_tag_lines_i.osc_trigger)
       ,.bsg_ds_tag_i          (osc_tag_lines_i.ds)
       ,.ext_clk_i             (ext_dfi_clk_2x_i)
-      ,.select_i              (2'b00)
+      ,.select_i              (osc_tag_lines_i.sel)
       ,.clk_o                 (dfi_clk_2x_o)
       );
 
