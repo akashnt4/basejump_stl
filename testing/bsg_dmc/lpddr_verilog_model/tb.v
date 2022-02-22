@@ -65,7 +65,7 @@
 * 3.37 bas    03/21/07    -added T47M part for 512Mb in parameters file,
                              modified tXP check to measure in tCLK for T47M
 * 3.60 clk    09/19/07    -fixed dm/dq verification fifo's
-* 3.60 clk    09/19/07    -fixed dqrx module delay statement
+* 3.60 clk    09/19/07    -fixed dqrx module dly statement
 * 3.80 clk    10/29/07    - Support for 1024Mb T48M
 * 4.00 clk    12/30/07    - Fixed Read terminated by precharge testcase
 * 4.70 clk    03/30/08    - Fixed typo in SRR code
@@ -245,7 +245,7 @@ module tb;
             a     <= {ADDR_BITS{1'b0}}; 
             repeat(10) @(negedge ck_tb);
             @ (negedge ck_tb) cke <= 1'b1;
-            $display ("%m at time %t TB:  A 200 us delay is required after cke is brought high.", $time);
+            $display ("%m at time %t TB:  A 200 us dly is required after cke is brought high.", $time);
         end
     endtask
 

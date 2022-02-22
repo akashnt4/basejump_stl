@@ -52,7 +52,7 @@
     parameter tRCD             =    15.0; // tRCD   ns    Active to Read/Write command time
     parameter tRP              =    15.0; // tRP    ns    Precharge command period
     parameter tRRD             =    10.0; // tRRD   ns    Active bank a to Active bank b command time
-    parameter tWTR             =     2.0; // tWTR  tCK    Internal Write-to-Read command delay
+    parameter tWTR             =     2.0; // tWTR  tCK    Internal Write-to-Read command dly
     parameter tXP              =     5.0; // tXP    ns    Exit power-down to first valid cmd *note: In data sheet this is specified as one clk, but min tck fails before tXP on the actual part
 `else `ifdef sg54                         //              Timing Parameters for -6 (CL = 3)
     parameter tAC3_max         =     5.0; // tAC    ns    Access window of DQ from CK/CK#
@@ -68,7 +68,7 @@
     parameter tRCD             =    16.2; // tRCD   ns    Active to Read/Write command time
     parameter tRP              =    16.2; // tRP    ns    Precharge command period
     parameter tRRD             =    10.8; // tRRD   ns    Active bank a to Active bank b command time
-    parameter tWTR             =     2.0; // tWTR  tCK    Internal Write-to-Read command delay
+    parameter tWTR             =     2.0; // tWTR  tCK    Internal Write-to-Read command dly
     parameter tXP              =     5.4; // tXP    ns    Exit power-down to first valid cmd *note: In data sheet this is specified as one clk, but min tck fails before tXP on the actual part
 `else `ifdef sg6                          //              Timing Parameters for -6 (CL = 3)
     parameter tAC3_max         =     5.5; // tAC    ns    Access window of DQ from CK/CK#
@@ -84,7 +84,7 @@
     parameter tRCD             =    18.0; // tRCD   ns    Active to Read/Write command time
     parameter tRP              =    18.0; // tRP    ns    Precharge command period
     parameter tRRD             =    12.0; // tRRD   ns    Active bank a to Active bank b command time
-    parameter tWTR             =     2.0; // tWTR  tCK    Internal Write-to-Read command delay
+    parameter tWTR             =     2.0; // tWTR  tCK    Internal Write-to-Read command dly
     parameter tXP              =     6.0; // tXP    ns    Exit power-down to first valid cmd *note: In data sheet this is specified as one clk, but min tck fails before tXP on the actual part
 `else `define sg75                        //              Timing Parameters for -75 (CL = 3)
     parameter tAC3_max         =     6.0; // tAC    ns    Access window of DQ from CK/CK#
@@ -100,7 +100,7 @@
     parameter tRCD             =    22.5; // tRCD   ns    Active to Read/Write command time
     parameter tRP              =    22.5; // tRP    ns    Precharge command period
     parameter tRRD             =    15.0; // tRRD   ns    Active bank a to Active bank b command time
-    parameter tWTR             =     1.0; // tWTR  tCK    Internal Write-to-Read command delay
+    parameter tWTR             =     1.0; // tWTR  tCK    Internal Write-to-Read command dly
     parameter tXP              =     7.5; // tXP    ns    Exit power-down to first valid cmd *note: In data sheet this is specified as one clk, but min tck fails before tXP on the actual part
 `endif `endif `endif
 

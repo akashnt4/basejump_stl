@@ -53,7 +53,7 @@
     parameter tRP              =    18.0; // tRP    ns    Precharge command period
     parameter tRRD             =    12.0; // tRRD   ns    Active bank a to Active bank b command time
     parameter tWR              =    12.0; // tWR    ns    Write recovery time
-    parameter tWTR             =     1.0; // tWTR  tCK    Internal Write-to-Read command delay
+    parameter tWTR             =     1.0; // tWTR  tCK    Internal Write-to-Read command dly
     parameter tXP              =     6.0; // tXP    ns    Exit power-down to first valid cmd
 `else `define sg75                        //              Timing Parameters for -75 (CL = 3)
     parameter tAC3_max         =     6.0; // tAC    ns    Access window of DQ from CK/CK#
@@ -70,7 +70,7 @@
     parameter tRP              =    22.5; // tRP    ns    Precharge command period
     parameter tRRD             =    15.0; // tRRD   ns    Active bank a to Active bank b command time
     parameter tWR              =    15.0; // tWR    ns    Write recovery time
-    parameter tWTR             =     1.0; // tWTR  tCK    Internal Write-to-Read command delay
+    parameter tWTR             =     1.0; // tWTR  tCK    Internal Write-to-Read command dly
     parameter tXP              =     7.5; // tXP    ns    Exit power-down to first valid cmd
 `endif 
 
