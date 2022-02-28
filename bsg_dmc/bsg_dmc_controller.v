@@ -153,7 +153,7 @@ module bsg_dmc_controller
 
   state        cstate, nstate;
 
-  dfi_cmd_e    c_cmd, n_cmd;
+  dfi_cmd_e    p_cmd, c_cmd, n_cmd;
 
   logic        shoot;
   logic  [7:0] open_bank;
@@ -462,8 +462,36 @@ module bsg_dmc_controller
                  WRITE:   shoot = (ap) ?  ( (cmd_tick >= dmc_p_i.tcas + dmc_p_i.trp + dfi_burst_length_lp-1) & (&tx_sipo_valid_lo) ): ((cmd_tick >= dmc_p_i.tcas + dfi_burst_length_lp-1) & (&tx_sipo_valid_lo));
                  READ:    shoot = cmd_tick >= dfi_burst_length_lp-1;
                  ACT:     shoot = (cmd_act_tick >= dmc_p_i.trc) & (cmd_tick >= dmc_p_i.trtp + dmc_p_i.trp) & (cmd_tick >= dmc_p_i.trrd) & (cmd_tick >= dmc_p_i.trrd);
-	             default: shoot = 1'b1;
-               endcase
+        	     default: shoot = 1'b1;
+           endcase
+    NOP: case(n_cmd)
+            WRITE: case(p_cmd)
+                        WRITE:   shoot = (ap) ? ((cmd_tick >= dfi_burst_length_lp-1)  && cmd_tick >= dmc_p_i.trp & (&tx_sipo_valid_lo)) : ((cmd_tick >= dfi_burst_length_lp-1) & (&tx_sipo_valid_lo)) ;
+                        READ:    shoot = (ap) ? (cmd_tick >= dmc_p_i.twtr && cmd_tick >= dmc_p_i.trp) : cmd_tick >= dmc_p_i.twtr ;
+                        default: shoot = 1'b1; 
+                   endcase
+            READ: case(p_cmd)
+                    WRITE:   shoot = (ap) ?  ( (cmd_tick >= dmc_p_i.tcas + dmc_p_i.trp + dfi_burst_length_lp-1)  ): ((cmd_tick >= dmc_p_i.tcas + dfi_burst_length_lp-1) );
+                    READ:    shoot = (cmd_tick >= dmc_p_i.tcas + dmc_p_i.trp + dfi_burst_length_lp-1);
+                    default: shoot = 1'b1;
+                  endcase 
+           PRE: case(p_cmd)
+                    READ: shoot = (cmd_tick >= dmc_p_i.trtp) & (cmd_act_tick >= dmc_p_i.tras);
+                    WRITE: shoot = (cmd_tick >= dmc_p_i.twr) & (cmd_act_tick >= dmc_p_i.tras);
+                    default: shoot = 1'b1;
+                endcase
+           REF:  case(p_cmd)
+                    READ: shoot = (cmd_tick >= dmc_p_i.trtp + dmc_p_i.trp) & (cmd_act_tick >= dmc_p_i.tras);
+                    WRITE:  shoot = (cmd_tick >= dmc_p_i.twr + dmc_p_i.trp) & (cmd_act_tick >= dmc_p_i.tras);
+                    default: shoot = 1'b1;
+                endcase
+           ACT: case(p_cmd)
+                    READ: shoot = (cmd_act_tick >= dmc_p_i.trc) & (cmd_tick >= dmc_p_i.trtp + dmc_p_i.trp) & (cmd_tick >= dmc_p_i.trrd) & (cmd_tick >= dmc_p_i.trrd);
+                    WRITE: shoot = (cmd_act_tick >= dmc_p_i.trc) & (cmd_tick >= dmc_p_i.twr + dmc_p_i.trp) & (cmd_tick >= dmc_p_i.trrd);
+                    default: shoot = 1'b1;
+                endcase
+            default: shoot = 1'b1;        
+         endcase
 	default: shoot = 1'b1;
       endcase
     else
@@ -507,10 +535,14 @@ module bsg_dmc_controller
   end
 
   always_ff @(posedge dfi_clk_i) begin
-    if(dfi_clk_sync_rst_i)
+    if(dfi_clk_sync_rst_i) begin
       c_cmd <= NOP;
-    else if(shoot)
+      p_cmd <= NOP;
+    end
+    else if(shoot) begin
+      p_cmd <= c_cmd;
       c_cmd <= n_cmd;
+    end
   end
 
   assign n_cmd = cmd_sfifo_rdata.cmd;
