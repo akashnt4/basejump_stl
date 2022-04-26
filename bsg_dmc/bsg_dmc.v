@@ -3,7 +3,7 @@
 module bsg_dmc
   import bsg_tag_pkg::*;
   import bsg_dmc_pkg::*;
- #(parameter  num_adgs_p         = 1
+ #(parameter  num_taps_p         = 4
   ,parameter  ds_width_p         = 2
   ,parameter `BSG_INV_PARAM( ui_addr_width_p    )
   ,parameter `BSG_INV_PARAM( ui_data_width_p    ) // data width of UI interface, can be 2^n while n = [3, log2(burst_data_width_p)]
@@ -82,9 +82,11 @@ module bsg_dmc
   ,input                             ui_clk_i
   //
   ,output                            ui_clk_sync_rst_o
-  ,input                             ext_dfi_clk_i
+  ,input                             ext_dfi_clk_2x_i
   ,output                            dfi_clk_2x_o
   ,output                            dfi_clk_1x_o
+  ,output          [dq_group_lp-1:0] dqs_clk_o
+  ,output          [dq_group_lp-1:0] dqs_clk_dly_o
   // Reserved to be compatible with Xilinx IPs
   ,output                     [11:0] device_temp_o
 );
@@ -118,9 +120,10 @@ module bsg_dmc
   bsg_dmc_s 						 dmc_p_lo;
   assign device_temp_o = 12'd0;
 
-  assign dfi_clk_2x_o = dfi_clk_2x_lo;
-  assign dfi_clk_1x_o = dfi_clk_1x_lo;
-
+  assign dfi_clk_2x_o  = dfi_clk_2x_lo;
+  assign dfi_clk_1x_o  = dfi_clk_1x_lo;
+  assign dqs_clk_o     = ddr_dqs_p_i;
+  assign dqs_clk_dly_o = dqs_p_li;
   
   bsg_dmc_sys_cfg_gen
 					dmc_sys_cfg_gen
@@ -135,7 +138,7 @@ module bsg_dmc
 					);
 					 
   bsg_dmc_clk_rst_gen #
-    (.num_adgs_p  ( num_adgs_p  )
+    (.num_taps_p  ( num_taps_p  )
     ,.ds_width_p  ( ds_width_p  )
     ,.dq_groups_p ( dq_group_lp ))
   dmc_clk_rst_gen
@@ -145,7 +148,7 @@ module bsg_dmc
     ,.osc_tag_lines_i       ( osc_tag_lines_i       )
     ,.dqs_clk_i             ( ddr_dqs_p_i           )
     ,.dqs_clk_o             ( dqs_p_li              )
-    ,.ext_dfi_clk_i         ( ext_dfi_clk_i         )
+    ,.ext_dfi_clk_2x_i      ( ext_dfi_clk_2x_i      )
     ,.ui_clk_i              ( ui_clk_i              )
     ,.ui_reset_o            ( ui_reset              )
     ,.async_reset_i         ( async_reset           )

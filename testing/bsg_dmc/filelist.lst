@@ -29,6 +29,7 @@
 ../../bsg_dmc/bsg_dmc.v
 ../../bsg_dmc/bsg_dmc_clk_rst_gen.v
 ../../bsg_dmc/bsg_dmc_controller.v
+../../bsg_dmc/bsg_dmc_dly_line_v3.v
 ../../bsg_dmc/bsg_dmc_phy.v
 ../../bsg_fsb/bsg_fsb_node_trace_replay.v
 ../../bsg_mem/bsg_mem_1r1w.v
@@ -71,7 +72,7 @@
 
 bsg_dmc_trace_rom.v
 ../../bsg_dmc/bsg_dmc_xilinx_ui_trace_replay.v
-bsg_dmc_tester.v
+#bsg_dmc_tester.v
 ../../bsg_dmc/bsg_dmc_sys_cfg_gen.v
 
 bsg_tag_boot_rom.v

@@ -1,14 +1,12 @@
 `include "bsg_defines.v"
-
-`define WRITE 3'b000
-`define READ  3'b001
+`include "bsg_dmc.vh"
 
 `ifndef UI_CLK_PERIOD
   `define UI_CLK_PERIOD 2500.0
 `endif
 
 `ifndef DFI_CLK_PERIOD
-  `define DFI_CLK_PERIOD 1250.0
+  `define DFI_CLK_PERIOD 2500.0
 `endif
 
 `ifndef TAG_CLK_PERIOD
@@ -26,8 +24,7 @@
 module traffic_generator
   import bsg_tag_pkg::*;
   import bsg_dmc_pkg::*;
- #(parameter  num_adgs_p         = 1
-  ,parameter `BSG_INV_PARAM(ui_addr_width_p)
+ #(parameter `BSG_INV_PARAM(ui_addr_width_p)
   ,parameter `BSG_INV_PARAM(ui_data_width_p) // data width of UI interface, can be 2^n while n = [3, log2(burst_data_width_p)]
   ,parameter `BSG_INV_PARAM(burst_data_width_p) // data width of an outstanding read/write transaction, typically data width of a cache line
   ,parameter `BSG_INV_PARAM( dq_data_width_p) // data width of DDR interface, consistent with packaging
@@ -334,14 +331,14 @@ module traffic_generator
 	      wdata_array[waddr] = wdata;
 	      $display("Time: %8d ns, Write %x to %x", $time(), wdata, waddr);
 	      fork
-	        ui_cmd(`WRITE, waddr);
+	        ui_cmd(WR, waddr);
 	        ui_write(0, wdata);
 	      join
 	    end
 	    for(k=0;k<256;k++) begin
 	      raddr = k*dq_burst_length_lp;
 	      raddr_queue.push_front(raddr);
-	      ui_cmd(`READ, raddr);
+	      ui_cmd(RD, raddr);
 	    end
 	    repeat(1000) @(posedge ui_clk);
 	    $display("\nRegression test passed!");
@@ -557,7 +554,7 @@ module traffic_generator
   	bsg_dmc_xilinx_ui_trace_replay
   						#(	.data_width_p(ui_data_width_p),
   							.addr_width_p(ui_addr_width_p),
-  							.burst_width_p(ui_burst_length_lp),
+  							.burst_len_p(ui_burst_length_lp),
                             // Arbitrary for now, just make sure the trace correlates
                             .cmd_tfifo_depth_p(3*ui_burst_length_lp),
                             .cmd_rfifo_depth_p(2*ui_burst_length_lp)
