@@ -62,7 +62,7 @@ module bsg_dmc_controller
   // Control and Status Registers
   ,input bsg_dmc_s                      dmc_p_i);
 
-  typedef enum logic [1:0] {IDLE, INIT, REFR, LDST} state;
+  typedef enum logic [2:0] {IDLE, INIT, CALR, REFR, LDST} state;
 
   integer i;
   genvar k;
@@ -132,6 +132,8 @@ module bsg_dmc_controller
   logic                     [dfi_data_width_p*dfi_burst_length_lp-1:0] rx_data;
 
   logic                                  [$clog2(cmd_afifo_depth_p):0] rd_credit;
+  logic                           [`BSG_WIDTH(ui_burst_length_lp)-1:0] rd_cnt;
+  logic                           [`BSG_WIDTH(ui_burst_length_lp)-1:0] calib_rd_cnt;
 
   logic [31:0] row_col_addr;
   logic [15:0] row_addr, col_addr;
@@ -164,10 +166,25 @@ module bsg_dmc_controller
   logic [15:0] init_tick;
   logic        init_done;
 
+  logic [15:0] calr_tick;
+  logic        init_calr_done;
+  // number of calibration reads completed. ie. response has been received by DDR and forwarded to DMC by DFI
+  logic [15:0] num_calib_reads_done;
+  logic        calr_reads_done;
+
   logic [15:0] ref_tick;
   logic  [1:0] refr_tick;
   logic        refr_req;
   logic        refr_ack;
+
+  logic [15:0] rd_calib_tick;    
+  logic        rd_calib_req;
+  logic        rd_calib_ack;
+  // number of calib reads pushed onto the cmd_sfifo. This does not mean that the transactions are issued to the DDR - that has to be monitored at the DDR/DFI interface; num_calib_reads_done tracks that count.
+  logic        rd_calib_pushed;
+  logic [7:0]  rd_calib_num_reads_todo; 
+
+  logic        mask_reads;
 
   logic  [1:0] ldst_tick;
 
@@ -183,6 +200,9 @@ module bsg_dmc_controller
   logic  [3:0] tick_wtr;
   logic  [3:0] tick_rtp;
   logic  [3:0] tick_cas;
+
+  // This is the number of times read commands will be issued to DMC. TODO: should we make this programmable?
+  assign rd_calib_num_reads_todo = dmc_p_i.periodic_calib_num_reads_todo;
 
   assign app_ref_ack_o = app_ref_req_i & ~app_wdf_end_i;
   assign app_zq_ack_o = app_zq_req_i;
@@ -209,7 +229,7 @@ module bsg_dmc_controller
 
   assign cmd_afifo_rclk  = dfi_clk_i;
   assign cmd_afifo_rrst  = dfi_clk_sync_rst_i;
-  assign cmd_afifo_rinc  = cmd_afifo_rvalid & cmd_sfifo_ready & (cstate == LDST && ldst_tick == 0);
+  assign cmd_afifo_rinc  = cmd_afifo_rvalid & cmd_sfifo_ready & (cstate == LDST && ldst_tick == 0) ;
 
   bsg_async_fifo #
     (.width_p   ( $bits(cmd_afifo_wdata)    )
@@ -269,15 +289,15 @@ module bsg_dmc_controller
     ,.yumi_i     ( tx_sipo_yumi_li                  ));
 
   assign row_col_addr = ((cmd_afifo_rdata.addr >> (dmc_p_i.bank_pos + dmc_p_i.bank_width)) << dmc_p_i.bank_pos) | (((1 << dmc_p_i.bank_pos) - 1) & cmd_afifo_rdata.addr);
-  assign col_addr     = 16'(((1 << dmc_p_i.col_width) - 1) & row_col_addr[ui_addr_width_p-1:0]);
-  assign row_addr     = 16'(((1 << dmc_p_i.row_width) - 1) & (row_col_addr >> dmc_p_i.col_width));
-  assign bank_addr    = 3'(((1 << dmc_p_i.bank_width) - 1) & (cmd_afifo_rdata.addr >> dmc_p_i.bank_pos));
-  assign ap           = cmd_afifo_rdata.cmd[1];
+  assign col_addr     = (cstate == CALR) ? 0 : 16'(((1 << dmc_p_i.col_width) - 1) & row_col_addr[ui_addr_width_p-1:0]);
+  assign row_addr     = (cstate == CALR) ? 0 : 16'(((1 << dmc_p_i.row_width) - 1) & (row_col_addr >> dmc_p_i.col_width));
+  assign bank_addr    = (cstate == CALR) ? 0 : 3'(((1 << dmc_p_i.bank_width) - 1) & (cmd_afifo_rdata.addr >> dmc_p_i.bank_pos));
+  assign ap           = (cstate == CALR) ? 0 : cmd_afifo_rdata.cmd[1];
 
   always_ff @(posedge dfi_clk_i) begin
     if(dfi_clk_sync_rst_i)
       init_calib_complete_o <= 0;
-    else if(init_done)
+    else if(init_done && init_calr_done)
       init_calib_complete_o <= 1;
   end
 
@@ -285,9 +305,30 @@ module bsg_dmc_controller
     if(dfi_clk_sync_rst_i)
       init_tick <= 0;
     else if(cstate == IDLE && nstate == INIT)
-      init_tick <= dmc_p_i.init_cycles;
+      init_tick <= dmc_p_i.init_cycles ;
     else if(cstate == INIT && init_tick != 0 && push)
       init_tick <= init_tick - 1;
+  end
+
+  always_ff @(posedge dfi_clk_i) begin
+    if(dfi_clk_sync_rst_i)
+      calr_tick <= 0;
+    else if(!init_calr_done) begin
+        if(cstate == IDLE && nstate == CALR)
+          // init_calib_reads number of reads and 1 cycle to push activate command
+          calr_tick <= dmc_p_i.init_calib_reads + 1;
+        else if(cstate == CALR && calr_tick != 0 && push)
+          calr_tick <= calr_tick - 1;
+    end
+    else begin
+        // Reset the count to 0 once the periodic calib reads have been pushed to 
+        if(rd_calib_pushed) begin
+            calr_tick <= 0;
+        end
+        else if(rd_calib_ack) begin
+            calr_tick <= calr_tick +  1;
+        end
+    end
   end
 
   always_ff @(posedge dfi_clk_i) begin
@@ -299,12 +340,31 @@ module bsg_dmc_controller
 
   always_ff @(posedge dfi_clk_i) begin
     if(dfi_clk_sync_rst_i)
+      init_calr_done <= 0;
+    else if(cstate == CALR && nstate == IDLE )
+      init_calr_done <= 1;
+  end
+
+  always_ff @(posedge dfi_clk_i) begin
+    if(dfi_clk_sync_rst_i)
       ref_tick <= 0;
     else if(init_done) begin
       if(ref_tick == dmc_p_i.trefi)
         ref_tick <= 0;
       else if(!refr_req)
         ref_tick <= ref_tick + 1;
+    end
+  end
+
+  always_ff @(posedge dfi_clk_i) begin
+    if(dfi_clk_sync_rst_i)
+      rd_calib_tick <= 0;
+    else if(init_calib_complete_o) begin
+          // reset rd_calib_tick counter when we hit the max value AND have moved to the IDLE state from LDST state or when a read command is issued through the UI.
+        if(((rd_calib_tick == dmc_p_i.rd_calib_cycles) && (cstate == IDLE)) ||  (cmd_afifo_rdata.cmd[0]))
+          rd_calib_tick <= 0;
+        else if(!rd_calib_req && (rd_calib_tick < dmc_p_i.rd_calib_cycles))
+          rd_calib_tick <= rd_calib_tick + 1;
     end
   end
 
@@ -323,6 +383,25 @@ module bsg_dmc_controller
 
   always_ff @(posedge dfi_clk_i) begin
     if(dfi_clk_sync_rst_i)
+      rd_calib_req <= 0;
+      if(init_calib_complete_o) begin
+        // reset rd_calib_req to 0 when we are done issuing rd_calib_num_reads_todo number of read commands.
+        if(rd_calib_pushed)
+          rd_calib_req <= 0;
+        //issue rd_calib_req when the previous R/W commands have been issued and we are back to idle state 
+        else if(((rd_calib_tick == dmc_p_i.rd_calib_cycles) && (cstate == IDLE)))
+          rd_calib_req <= 1;
+      end
+  end
+
+  // acknowledgement for every calib read command pushed to cmd_sfifo. 
+  assign rd_calib_ack = (cstate == CALR) & rd_calib_req & push & (ldst_tick==0);
+
+  // denotes rd_calib_num_reads_todo number of reads (number of reads per periodic calibration operation) have been pushed to cmd_sfifo
+  assign rd_calib_pushed = (init_calr_done) && (calr_tick == rd_calib_num_reads_todo);
+
+  always_ff @(posedge dfi_clk_i) begin
+    if(dfi_clk_sync_rst_i)
       refr_tick <= 0;
     else if(cstate == IDLE && nstate == REFR) begin
       if(|open_bank)
@@ -337,7 +416,7 @@ module bsg_dmc_controller
   always_ff @(posedge dfi_clk_i) begin
     if(dfi_clk_sync_rst_i)
       ldst_tick <= 0;
-    else if(cstate == IDLE && nstate == LDST) begin
+    else if(cstate == IDLE && (nstate == LDST || (nstate == CALR && rd_calib_req))) begin
       if(open_bank[bank_addr] && open_row[bank_addr] == row_addr)
         ldst_tick <= 1;
       else if(open_bank[bank_addr])
@@ -345,7 +424,7 @@ module bsg_dmc_controller
       else
         ldst_tick <= 2;
     end
-    else if(cstate == LDST && ldst_tick != 0 && push)
+    else if((cstate == LDST || (cstate == CALR && rd_calib_req))  && ldst_tick != 0 && push)
       ldst_tick <= ldst_tick - 1;
   end
 
@@ -355,16 +434,50 @@ module bsg_dmc_controller
     case(cstate)
       INIT: begin
         push = cmd_sfifo_ready;
-        case(init_tick)
-          'd5: begin cmd_sfifo_wdata.cmd = PRE; cmd_sfifo_wdata.addr = 16'h400; end
-          'd4: begin cmd_sfifo_wdata.cmd = REF; cmd_sfifo_wdata.addr = 16'h0; end
-          'd3: begin cmd_sfifo_wdata.cmd = REF; cmd_sfifo_wdata.addr = 16'h0; end
-          'd2: begin cmd_sfifo_wdata.cmd = LMR; cmd_sfifo_wdata.addr = {8'h0, dmc_p_i.tcas, 4'($clog2(dfi_burst_length_lp << 1))}; cmd_sfifo_wdata.ba = 4'h0; end
-          'd1: begin cmd_sfifo_wdata.cmd = LMR; cmd_sfifo_wdata.addr = 16'h0; cmd_sfifo_wdata.ba = 4'h2; end
-          'd0: begin cmd_sfifo_wdata.cmd = NOP; end
-          default: cmd_sfifo_wdata.cmd = DESELECT;
+        case(init_tick) inside
+          'd5        : begin cmd_sfifo_wdata.cmd = PRE; cmd_sfifo_wdata.addr = 16'h400; end
+          'd4        : begin cmd_sfifo_wdata.cmd = REF; cmd_sfifo_wdata.addr = 16'h0; end
+          'd3        : begin cmd_sfifo_wdata.cmd = REF; cmd_sfifo_wdata.addr = 16'h0; end
+          'd2        : begin cmd_sfifo_wdata.cmd = LMR; cmd_sfifo_wdata.addr = {8'h0, dmc_p_i.tcas, 4'($clog2(dfi_burst_length_lp << 1))}; cmd_sfifo_wdata.ba = 4'h0; end
+          'd1        : begin cmd_sfifo_wdata.cmd = LMR; cmd_sfifo_wdata.addr = 16'h0; cmd_sfifo_wdata.ba = 4'h2; end
+          'd0        : begin cmd_sfifo_wdata.cmd = NOP; end
+          default    : cmd_sfifo_wdata.cmd = DESELECT;
         endcase
       end
+      // We will be in CALR during 3 phases:
+      //    1. While doing initial calibration reads
+      //    2. While issuing doing periodic read calibration:
+      //    3. While any previous read for calibration transaction was not completed (ie. complete here means until we receive read data from DFI for the read for calibration command)
+      //    NOTE: We will be cycling between IDLE and CALR for rd_calib_num_reads_todo number of times. For example, the transition for rd_calib_num_reads_todo =2 would be LDST -> IDLE -> CALR (first calibration read) -> IDLE -> CALR(second calib read) -> IDLE -> CALR (pending calib reads) -> IDLE (pending calib reads done, can move to normal operation)
+      CALR: begin
+        push = cmd_sfifo_ready;
+        // Initial calibration reads
+        if(!init_calr_done) begin
+            if(calr_tick == dmc_p_i.init_calib_reads) begin
+                cmd_sfifo_wdata.cmd = ACT; cmd_sfifo_wdata.ba = bank_addr; cmd_sfifo_wdata.addr = row_addr;
+            end
+            else if(calr_tick != 0 ) begin
+                cmd_sfifo_wdata.ba = bank_addr;
+                cmd_sfifo_wdata.addr = {col_addr[14:10], ap, col_addr[9:0]};
+                cmd_sfifo_wdata.cmd = READ;
+            end
+        end
+        // Periodic calibration reads
+        else if(rd_calib_req) begin
+            case(ldst_tick)
+              'd3: begin cmd_sfifo_wdata.cmd = PRE; cmd_sfifo_wdata.ba = bank_addr; cmd_sfifo_wdata.addr = open_row[bank_addr]; end
+              'd2: begin cmd_sfifo_wdata.cmd = ACT; cmd_sfifo_wdata.ba = bank_addr; cmd_sfifo_wdata.addr = row_addr; end
+              'd1: begin
+                     cmd_sfifo_wdata.ba = bank_addr;
+                     cmd_sfifo_wdata.addr = {col_addr[14:10], ap, col_addr[9:0]};
+                     cmd_sfifo_wdata.cmd = READ;
+                   end
+              'd0: begin 
+                        cmd_sfifo_wdata.cmd = NOP; 
+                   end
+            endcase
+        end
+      end          
       REFR: begin
         push = cmd_sfifo_ready;
         case(refr_tick)
@@ -382,42 +495,56 @@ module bsg_dmc_controller
                  cmd_sfifo_wdata.ba = bank_addr;
                  cmd_sfifo_wdata.addr = {col_addr[14:10], ap, col_addr[9:0]};
                  if(cmd_afifo_rdata.cmd[0])
-                   cmd_sfifo_wdata.cmd = READ;
+                     cmd_sfifo_wdata.cmd = READ;
                  else
-                   cmd_sfifo_wdata.cmd = WRITE;
+                     cmd_sfifo_wdata.cmd = WRITE;
                end
-          'd0: begin cmd_sfifo_wdata.cmd = NOP; end
+          'd0: begin 
+                    cmd_sfifo_wdata.cmd = NOP; 
+               end
         endcase
       end
     endcase
   end
 
+  // If we are doing initial read calibration, match with number of init_calib_reads count. If it is periodic read calibration, check if rd_calib_num_reads_todo number of reads are done.
+  assign calr_reads_done = (cstate == CALR) && ((~init_calr_done && (num_calib_reads_done == dmc_p_i.init_calib_reads)) || rd_calib_ack);
+
   always_comb begin
     nstate = IDLE;
     case(cstate)
-      IDLE: if(!init_done)             nstate = INIT;
-            else if(refr_req)          nstate = REFR;
-            else if(cmd_afifo_rvalid)  nstate = LDST;
-            else                       nstate = cstate;
-      INIT: if(init_tick == 0 && push) nstate = IDLE;
-            else                       nstate = cstate;
-      REFR: if(refr_tick == 0 && push) nstate = IDLE;
-            else                       nstate = cstate;
-      LDST: if(ldst_tick == 0 && push) nstate = IDLE;
-            else                       nstate = cstate;
-      default:                         nstate = IDLE;
+      IDLE: if(!init_done)                                                          nstate = INIT;
+            else if(refr_req)                                                       nstate = REFR;
+            // for initial calibration reads
+            else if(init_done && !init_calr_done)                                   nstate = CALR;
+            // for periodic read calibrations that happen in between normal operation
+            else if(rd_calib_req)                                                   nstate = CALR;
+            else if(cmd_afifo_rvalid)                                               nstate = LDST;
+            else                                                                    nstate = cstate;
+      INIT: if(init_tick == 0 && push)                                              nstate = IDLE;
+            else                                                                    nstate = cstate;
+            // Move out of CALR when there are no outstanding read requests or read data to be received.
+      CALR: if(calr_reads_done || (init_calr_done & !rd_calib_req && !mask_reads))  nstate = IDLE;
+            else                                                                    nstate = cstate;
+      REFR: if(refr_tick == 0 && push)                                              nstate = IDLE;
+            else                                                                    nstate = cstate;
+      LDST: if(ldst_tick == 0 && push)                                              nstate = IDLE;
+            else                                                                    nstate = cstate;
+      default:                                                                      nstate = IDLE;
     endcase
   end
 
   always_ff @(posedge dfi_clk_i) begin
-    if(dfi_clk_sync_rst_i)
+    if(dfi_clk_sync_rst_i) begin
       cstate <= IDLE;
-    else
+    end
+    else begin
       cstate <= nstate;
+    end
   end
 
   assign cmd_sfifo_winc  = push;
-  assign cmd_sfifo_rinc  = shoot;
+  assign cmd_sfifo_rinc  = cmd_sfifo_valid & shoot;
 
   bsg_fifo_1r1w_small #
     (.width_p            ( $bits(cmd_sfifo_wdata) )
@@ -434,7 +561,7 @@ module bsg_dmc_controller
     ,.yumi_i             ( cmd_sfifo_rinc     ));
 
   always_comb begin
-    if(cmd_sfifo_valid && !stall_transactions_i)
+    if(!stall_transactions_i)
       case(c_cmd)
 	LMR:   shoot = cmd_tick >= dmc_p_i.tmrd;
 	REF:   shoot = cmd_tick >= dmc_p_i.trfc;
@@ -513,7 +640,7 @@ module bsg_dmc_controller
       c_cmd <= n_cmd;
   end
 
-  assign n_cmd = cmd_sfifo_rdata.cmd;
+  assign n_cmd = cmd_sfifo_valid ? cmd_sfifo_rdata.cmd : NOP;
 
   always_ff @(posedge dfi_clk_i) begin
     if(dfi_clk_sync_rst_i) begin
@@ -588,8 +715,9 @@ module bsg_dmc_controller
   end
 
   always_ff @(posedge dfi_clk_i) begin
-    if(dfi_clk_sync_rst_i)
+    if(dfi_clk_sync_rst_i) begin
       open_bank <= 0;
+    end
     else if(cmd_sfifo_winc) begin
       case(cmd_sfifo_wdata[23:20])
         ACT: begin
@@ -679,7 +807,43 @@ module bsg_dmc_controller
     ,.r_clk_i   ( rddata_afifo_rclk   )
     ,.r_reset_i ( rddata_afifo_rrst   ));
 
-  assign rx_sipo_valid_li = rddata_afifo_rvalid;
+  always_ff @(posedge ui_clk_i) begin
+    if(ui_clk_sync_rst_i)
+      calib_rd_cnt <= 0;
+    if(calib_rd_cnt == dfi_burst_length_lp )
+      calib_rd_cnt <= '0;
+    else if(rddata_afifo_rvalid ) begin
+      calib_rd_cnt <= calib_rd_cnt + 1;
+    end
+  end
+
+  always_ff @(posedge ui_clk_i) begin
+    if(ui_clk_sync_rst_i)
+      num_calib_reads_done <= 0;
+    else if((!init_calib_complete_o && (num_calib_reads_done==dmc_p_i.init_calib_reads) ) || (init_calib_complete_o && (num_calib_reads_done==rd_calib_num_reads_todo)) ) begin
+        num_calib_reads_done <= 0;
+    end
+    else if((calib_rd_cnt == dfi_burst_length_lp) ) begin
+      num_calib_reads_done <= num_calib_reads_done + 1;
+    end
+  end
+
+  always_ff @(posedge ui_clk_i) begin
+    if(ui_clk_sync_rst_i) begin
+      mask_reads <= 0;
+    end
+    //else if(init_calr_done) begin
+
+    //end
+    else if(rd_calib_req) begin
+      mask_reads <= 1;
+    end
+    else if(mask_reads && (num_calib_reads_done == rd_calib_num_reads_todo)) begin
+      mask_reads <= 0;
+    end
+  end
+
+  assign rx_sipo_valid_li = (cstate == CALR || mask_reads) ? 0 :rddata_afifo_rvalid;
   assign rx_sipo_data_li = rddata_afifo_rdata;
   assign rx_sipo_yumi_li = rx_sipo_valid_lo;
 
@@ -702,8 +866,8 @@ module bsg_dmc_controller
   for(k=0;k<ui_burst_length_lp;k++) begin: rx_make
     assign rx_piso_data_li[k] = rx_data[k*ui_data_width_p+:ui_data_width_p];
   end
+  assign rx_piso_valid_li =  &rx_sipo_valid_lo;
 
-  assign rx_piso_valid_li =  rx_sipo_valid_lo;
   assign rx_piso_yumi_li = rx_piso_valid_lo;
 
   bsg_parallel_in_serial_out #
@@ -718,8 +882,6 @@ module bsg_dmc_controller
     ,.valid_o ( rx_piso_valid_lo   )
     ,.data_o  ( rx_piso_data_lo    )
     ,.yumi_i  ( rx_piso_yumi_li    ));
-
-  logic [`BSG_WIDTH(ui_burst_length_lp)-1:0] rd_cnt;
 
   always_ff @(posedge ui_clk_i) begin
     if(ui_clk_sync_rst_i)
@@ -746,13 +908,11 @@ module bsg_dmc_controller
      ,.count_o(txn_cnt)
      );
   assign transaction_in_progress_o = (txn_cnt != '0);
-
   assign refresh_in_progress_o = (c_cmd == REF);
 
-  assign app_rd_data_valid_o = rx_piso_valid_lo;
-  assign app_rd_data_o       = rx_piso_data_lo;
-  assign app_rd_data_end_o   = rx_piso_valid_lo && (rd_cnt == ui_burst_length_lp - 1);
-
+  assign app_rd_data_valid_o =  rx_piso_valid_lo ;
+  assign app_rd_data_o       =  rx_piso_data_lo;
+  assign app_rd_data_end_o   =  (rx_piso_valid_lo && (rd_cnt == ui_burst_length_lp - 1));
 endmodule
 
 `BSG_ABSTRACT_MODULE(bsg_dmc_controller)
