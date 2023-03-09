@@ -30,7 +30,7 @@ module testbench();
   localparam sets_p = 128;
   localparam ways_p = 8;
   localparam mem_size_p = block_size_in_words_p*sets_p*ways_p*4;
-
+  localparam word_tracking_p = `WORD_TRACKING_P;
 
   integer status;
   integer wave;
@@ -45,11 +45,11 @@ module testbench();
 
 
   `declare_bsg_cache_pkt_s(addr_width_p,data_width_p);
-  `declare_bsg_cache_dma_pkt_s(addr_width_p);
+  `declare_bsg_cache_dma_pkt_s(addr_width_p,block_size_in_words_p);
 
   bsg_cache_pkt_s cache_pkt;
   logic v_li;
-  logic ready_lo;
+  logic yumi_lo;
 
   logic [data_width_p-1:0] cache_data_lo;
   logic v_lo;
@@ -75,13 +75,14 @@ module testbench();
     ,.sets_p(sets_p)
     ,.ways_p(ways_p)
     ,.amo_support_p(amo_support_level_arithmetic_lp)
+    ,.word_tracking_p(word_tracking_p)
   ) DUT (
     .clk_i(clk)
     ,.reset_i(reset)
 
     ,.cache_pkt_i(cache_pkt)
     ,.v_i(v_li)
-    ,.ready_o(ready_lo)
+    ,.yumi_o(yumi_lo)
 
     ,.data_o(cache_data_lo)
     ,.v_o(v_lo)
@@ -118,6 +119,7 @@ module testbench();
   bsg_nonsynth_dma_model #(
     .addr_width_p(addr_width_p)
     ,.data_width_p(data_width_p)
+    ,.mask_width_p(block_size_in_words_p)
     ,.block_size_in_words_p(block_size_in_words_p)
     ,.els_p(mem_size_p)
 
@@ -190,7 +192,7 @@ module testbench();
   
   assign cache_pkt = tr_data_lo;
   assign v_li = tr_v_lo;
-  assign tr_yumi_li = tr_v_lo & ready_lo;
+  assign tr_yumi_li = yumi_lo;
 
   bind bsg_cache basic_checker_32 #(
     .data_width_p(data_width_p)
@@ -210,7 +212,7 @@ module testbench();
       recv_r <= '0;
     end
     else begin
-      if (v_li & ready_lo)
+      if (yumi_lo)
         sent_r <= sent_r + 1;
 
       if (v_lo & yumi_li)
@@ -224,5 +226,14 @@ module testbench();
     #500;
     $finish;
   end
+
+  // check for X in handshaking signals
+  always @ (negedge clk) begin
+    if (reset !== 1'b1) begin
+      assert (yumi_lo !== 1'bx) else $fatal(1, "[BSG_FATAL]  yumi_o == x");
+      assert (v_lo !== 1'bx) else $fatal(1, "[BSG_FATAL]  v_o == x");
+    end
+  end
+
 
 endmodule

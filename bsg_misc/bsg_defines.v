@@ -39,7 +39,7 @@
 `define BSG_INV_PARAM(param) param = -1
 `elsif YOSYS // Bare default parameters are incompatible as of 0.9
 `define BSG_INV_PARAM(param) param = "inv"
-`else // VIVADO, DC, VERILATOR, GENUS
+`else // VIVADO, DC, VERILATOR, GENUS, SURELOG
 `define BSG_INV_PARAM(param) param
 `endif
 
@@ -84,6 +84,8 @@
   `define BSG_VIVADO_SYNTH_FAILS
   `elsif CDS_TOOL_DEFINE
   `define BSG_VIVADO_SYNTH_FAILS
+  `elsif SURELOG
+  `define BSG_VIVADO_SYNTH_FAILS
   `else
   `define BSG_VIVADO_SYNTH_FAILS this_module_is_not_synthesizeable_in_vivado
   `endif
@@ -123,5 +125,68 @@
 `ifndef rpgroup
 `define rpgroup(x)
 `endif
+
+// verilog preprocessing -> if defined(A) && defined(B) then define C
+`define BSG_DEFIF_A_AND_B(A,B,C) \
+    `undef C \
+    `ifdef A \
+        `ifdef B \
+            `define C \
+        `endif \
+    `endif
+
+// verilog preprocessing -> if defined(A) && !defined(B) then define C
+`define BSG_DEFIF_A_AND_NOT_B(A,B,C) \
+    `undef C \
+    `ifdef A \
+        `ifndef B \
+            `define C \
+        `endif \
+    `endif
+
+// verilog preprocessing -> if !defined(A) && defined(B) then define C
+`define BSG_DEFIF_NOT_A_AND_B(A,B,C) `BSG_DEFIF_A_AND_NOT_B(B,A,C)
+
+// verilog preprocessing -> if !defined(A) && !defined(B) then define C
+`define BSG_DEFIF_NOT_A_AND_NOT_B(A,B,C) \
+    `undef C \
+    `ifndef A \
+        `ifndef B \
+            `define C \
+        `endif \
+    `endif
+
+// verilog preprocessing -> if defined(A) || defined(B) then define C
+`define BSG_DEFIF_A_OR_B(A,B,C) \
+    `undef C \
+    `ifdef A \
+        `define C \
+    `endif \
+    `ifdef B \
+        `define C \
+    `endif
+
+// verilog preprocessing -> if defined(A) || !defined(B) then define C
+`define BSG_DEFIF_A_OR_NOT_B(A,B,C) \
+    `undef C \
+    `ifdef A \
+        `define C \
+    `endif \
+    `ifndef B \
+        `define C \
+    `endif
+
+// verilog preprocessing -> if !defined(A) || defined(B) then define C
+`define BSG_DEFIF_NOT_A_OR_B(A,B,C) `BSG_DEFIF_A_OR_NOT_B(B,A,C)
+
+// verilog preprocessing -> if !defined(A) || !defined(B) then define C
+`define BSG_DEFIF_NOT_A_OR_NOT_B(A,B,C) \
+    `undef C \
+    `ifndef A \
+        `define C \
+    `endif \
+    `ifndef B \
+        `define C \
+    `endif
 
 `endif

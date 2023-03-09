@@ -15,7 +15,7 @@ module basic_checker_32
 
     , input [cache_pkt_width_lp-1:0] cache_pkt_i
     , input v_i
-    , input ready_o
+    , input yumi_o
 
     , input [data_width_p-1:0] data_o
     , input v_o
@@ -137,7 +137,7 @@ module basic_checker_32
       if (en_i) begin
 
         // input recorder
-        if (v_i & ready_o) begin
+        if (yumi_o) begin
           case (cache_pkt.opcode)
             TAGST: begin
               result[send_id] = '0;
@@ -217,7 +217,7 @@ module basic_checker_32
         // output checker
         if (v_o & yumi_i) begin
           assert(result[recv_id] == data_o)
-            else $fatal("[BSG_FATAL] output does not match expected result. Id=%d, Expected: %x. Actual: %x.",
+            else $fatal(1, "[BSG_FATAL] output does not match expected result. Id=%d, Expected: %x. Actual: %x.",
                     recv_id, result[recv_id], data_o);
           recv_id++;
         end

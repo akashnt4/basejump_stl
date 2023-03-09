@@ -14,6 +14,7 @@ module testbench();
   parameter block_size_in_words_p = 8;
   parameter sets_p = 512;
   parameter ways_p = `WAYS_P;
+  parameter word_tracking_p = 1;
 
   parameter ring_width_p = `bsg_cache_pkt_width(addr_width_p, data_width_p);
   parameter rom_addr_width_p = 32;
@@ -44,13 +45,13 @@ module testbench();
   bsg_cache_pkt_s cache_pkt;
 
   logic cache_v_li;
-  logic cache_ready_lo;
+  logic cache_yumi_lo;
 
   logic [data_width_p-1:0] cache_data_lo;
   logic cache_v_lo;
   logic cache_yumi_li;
 
-  `declare_bsg_cache_dma_pkt_s(addr_width_p);
+  `declare_bsg_cache_dma_pkt_s(addr_width_p, block_size_in_words_p);
   bsg_cache_dma_pkt_s dma_pkt;
   logic dma_pkt_v_lo;
   logic dma_pkt_yumi_li;
@@ -69,6 +70,7 @@ module testbench();
     ,.block_size_in_words_p(block_size_in_words_p)
     ,.sets_p(sets_p)
     ,.ways_p(ways_p)
+    ,.word_tracking_p(word_tracking_p)
     ,.amo_support_p(amo_support_level_arithmetic_lp)
   ) DUT (
     .clk_i(clk)
@@ -76,7 +78,7 @@ module testbench();
 
     ,.cache_pkt_i(cache_pkt)
     ,.v_i(cache_v_li)
-    ,.ready_o(cache_ready_lo)
+    ,.yumi_o(cache_yumi_lo)
 
     ,.data_o(cache_data_lo)
     ,.v_o(cache_v_lo)
@@ -165,7 +167,7 @@ module testbench();
   );
 
   assign fifo_yumi_li = fifo_v_lo & tr_ready_lo;
-  assign tr_yumi_li = cache_v_li & cache_ready_lo;
+  assign tr_yumi_li = cache_yumi_lo;
   
   assign tr_data_li = {{(ring_width_p-data_width_p){1'b0}}, fifo_data_lo};
 
@@ -181,6 +183,7 @@ module testbench();
   bsg_nonsynth_dma_model #(
     .addr_width_p(addr_width_p)
     ,.data_width_p(data_width_p)
+    ,.mask_width_p(block_size_in_words_p)
     ,.block_size_in_words_p(block_size_in_words_p)
     ,.els_p(2**18)
   ) dma (
