@@ -268,6 +268,19 @@ module testbench();
     end
   endgenerate
 
+  // ASSERTIONS_START: this part will use RTL hierarchy, might have to be updated for design hierarchy updates
+
+  logic dmc_controller_tx_data_piso_ready_lo =  dmc_inst.controller.tx_data_piso_ready_lo;
+  logic dmc_controller_wburst_valid =           dmc_inst.controller.wburst_valid;
+  
+  always_comb begin: assertion_tx_data_piso_ready_not_equal_to_wburst_valid 
+    if (dmc_controller_tx_data_piso_ready_lo != dmc_controller_wburst_valid) begin
+        $error("%t tx_data_piso_ready_lo is not equal to wburst_valid: packets should be sent to piso only when it is ready to receive", $time);
+    end
+  end
+
+  // ASSERTIONS_END
+
   initial begin
 	  irritate_clock = 0;
       send_dynamic_tag = 0;
