@@ -34,6 +34,7 @@
 ../../bsg_fsb/bsg_fsb_node_trace_replay.v
 ../../bsg_mem/bsg_mem_1r1w.v
 ../../bsg_mem/bsg_mem_1r1w_synth.v
+../../bsg_misc/bsg_and.v
 ../../bsg_misc/bsg_buf.v
 ../../bsg_misc/bsg_circular_ptr.v
 ../../bsg_misc/bsg_counter_clock_downsample.v

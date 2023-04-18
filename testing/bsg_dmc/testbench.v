@@ -26,10 +26,10 @@ module testbench();
 
   bsg_dmc_s                        dmc_p;
 
-  logic							   stall_transactions_lo;
+  logic							   dfi_stall_transactions_lo;
   logic							   transaction_in_progress_lo;
-  logic							   test_mode_lo;
-  logic							   refresh_in_progress_lo;
+  logic							   dfi_test_mode_lo;
+  logic							   dfi_refresh_in_progress_lo;
 
   logic                            sys_reset;
   logic							   clock_monitor_clk_lo;
@@ -56,11 +56,13 @@ module testbench();
   wire                             app_sr_req;
   wire                             app_sr_active;
   // Status signal
-  wire                             init_calib_complete;
+  wire                             dfi_init_calib_complete;
   logic							   frequency_mismatch_lo;
 
   logic                            ui_clk;
   wire                             ui_clk_sync_rst;
+
+  logic                            dfi_clk;
 
   logic                            dfi_clk_2x;
   logic                            dfi_clk_1x;
@@ -136,14 +138,14 @@ module testbench();
     ,.app_sr_req_o          ( app_sr_req          )
     ,.app_sr_active_i       ( app_sr_active       )
     // Status signal
-    ,.init_calib_complete_i ( init_calib_complete )
+    ,.dfi_init_calib_complete_i ( dfi_init_calib_complete )
     ,.ui_clk_o              ( ui_clk              )
     ,.ui_clk_sync_rst_i     ( ui_clk_sync_rst     )
     ,.dfi_clk_o             ( dfi_clk              )
 	,.tag_lines_o			(tag_lines_lo)
 	,.stall_trace_reading_i (send_dynamic_tag)
 	,.irritate_clock_i		(irritate_clock)
-	,.refresh_in_progress_i (refresh_in_progress_lo)
+	,.dfi_refresh_in_progress_i (dfi_refresh_in_progress_lo)
 	,.clock_monitor_clk_i	(clock_monitor_clk_lo)
 	,.frequency_mismatch_o	(frequency_mismatch_lo)
 	,.clock_correction_done_o(clock_correction_done_lo)
@@ -183,11 +185,11 @@ module testbench();
     ,.app_sr_req_i          ( app_sr_req          )
     ,.app_sr_active_o       ( app_sr_active       )
 
-    ,.init_calib_complete_o ( init_calib_complete )
-	,.stall_transactions_o(stall_transactions_lo)
-	,.transaction_in_progress_o(transaction_in_progress_lo)
-	,.test_mode_o(test_mode_lo)
-	,.refresh_in_progress_o(refresh_in_progress_lo)
+    ,.dfi_init_calib_complete_o ( dfi_init_calib_complete )
+	,.dfi_stall_transactions_o(dfi_stall_transactions_lo)
+	,.ui_transaction_in_progress_o(transaction_in_progress_lo)
+	,.dfi_test_mode_o(dfi_test_mode_lo)
+	,.dfi_refresh_in_progress_o(dfi_refresh_in_progress_lo)
 
     ,.ddr_ck_p_o            ( ddr_ck_p            )
     ,.ddr_ck_n_o            ( ddr_ck_n            )
